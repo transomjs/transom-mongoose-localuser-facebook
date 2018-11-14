@@ -1,38 +1,29 @@
 'use strict';
 const debug = require('debug')('transom:facebook');
-const FacebookLoginHandler = require('./lib/FacebookLoginHandler');
+const FacebookStrategy = require('./lib/FacebookStrategy');
 const restifyErrors = require('restify-errors');
 
 function TransomLocalUserFacebook() {
   this.initialize = function(server, options) {
     options = options || {};
-	const strategyName = options.strategy || 'facebook';
-	
+    const strategyName = options.strategy || 'facebook';
     debug(`Initializing TransomLocalUserFacebook strategy: ${strategyName}`);
-
+    
     const facebookDefn = server.registry.get(
       'transom-config.definition.facebook',
       {}
     );
-    const facebookOptions = Object.assign({}, options, facebookDefn);
-
-	console.log('TransomLocalUserFacebook facebookOptions:', facebookOptions);
-
-    const baseUiUri = facebookOptions.baseUiUri || '<baseUiUri is not set!>';
-    const baseApiUri = facebookOptions.baseApiUri || '<baseApiUri is not set!>';
-    debug(
-      `facebook.baseUiUri = ${baseUiUri}, facebook.baseApiUri = ${baseApiUri}`
-    );
-
-    const fbHandler = new FacebookLoginHandler(server, facebookOptions);
-    const strategy = fbHandler.createStrategy();
-
-    const passport = server.registry.get('passport');
-    passport.use(strategyName, strategy);
-
     const uriPrefix = server.registry.get(
       'transom-config.definition.uri.prefix'
     );
+    const facebookOptions = Object.assign({}, options, facebookDefn);
+    const baseUiUri = facebookOptions.baseUiUri || '<baseUiUri is not set!>';
+    const baseApiUri = facebookOptions.baseApiUri || '<baseApiUri is not set!>';
+    const fbHandler = new FacebookStrategy(server, facebookOptions);
+    const strategy = fbHandler.createStrategy();
+    const passport = server.registry.get('passport');
+    passport.use(strategyName, strategy);
+
     const fbConfig = {
       session: false,
       callbackURL: `${baseApiUri}${uriPrefix}/user/${strategyName}-callback`,
@@ -41,7 +32,7 @@ function TransomLocalUserFacebook() {
       scope: 'email'
     };
 
-	// *********************************************************
+    // *********************************************************
     server.get(`${uriPrefix}/user/${strategyName}-verify`, function(
       req,
       res,
@@ -49,14 +40,13 @@ function TransomLocalUserFacebook() {
     ) {
       const nonceToken = req.params['nonce'];
       const transomNonce = server.registry.get('transomNonce');
-      transomNonce
-        .verifyNonce(nonceToken, (err, bearer) => {
-			if (err) {
-				return next(err);
-			}
-			res.json({ bearer });
-			next();
-		  });
+      transomNonce.verifyNonce(nonceToken, (err, bearer) => {
+        if (err) {
+          return next(err);
+        }
+        res.json({ bearer });
+        next();
+      });
     });
 
     // *********************************************************
@@ -90,12 +80,13 @@ function TransomLocalUserFacebook() {
                 if (err) {
                   return reject(new restifyErrors.InternalError(err));
                 }
-                let successRedirect = facebookOptions.successRedirect || baseUiUri;
+                let successRedirect =
+                  facebookOptions.successRedirect || baseUiUri;
                 successRedirect +=
                   (successRedirect.indexOf('?') === -1 ? '?' : '&') +
                   `${strategyName}-nonce=${nonce.token}`;
 
-				  console.log({ successRedirect, nonce, token });
+                console.log({ successRedirect, nonce, token });
 
                 // Send autenticated users back to the UI!
                 return resolve(successRedirect);
@@ -132,7 +123,11 @@ function TransomLocalUserFacebook() {
         }
         return user;
       }
-      passport.authenticate(strategyName, fbConfig, strategyCallback)(req, res, next);
+      passport.authenticate(strategyName, fbConfig, strategyCallback)(
+        req,
+        res,
+        next
+      );
     });
   };
 }
