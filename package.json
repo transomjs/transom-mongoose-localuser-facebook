@@ -36,7 +36,7 @@
     "sinon": "^7.1.1"
   },
   "peerDependencies": {
-    "@transomjs/transom-mongoose": "^1.8.0-0",
+    "@transomjs/transom-mongoose": "^1.8.0",
     "@transomjs/transom-mongoose-nonce": "^1.2.0"
   },
   "dependencies": {
