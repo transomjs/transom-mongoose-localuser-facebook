@@ -1,6 +1,6 @@
 {
   "name": "@transomjs/transom-mongoose-localuser-facebook",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Add Facebook authentication to a Transon API",
   "main": "index.js",
   "scripts": {
